@@ -12,11 +12,14 @@
 
     <figure class="ai-helper-preview" id="aiHelperPreview" hidden>
       <img id="aiHelperPreviewImage" alt="Captured area preview">
-      <figcaption>Selected screenshot</figcaption>
+      <figcaption>
+        <span>已選取截圖</span>
+        <button id="aiHelperClearScreenshotButton" type="button">刪除截圖</button>
+      </figcaption>
     </figure>
 
     <div class="ai-helper-input-row">
-      <textarea id="aiHelperPromptInput" rows="4" placeholder="Enter a question or instruction for Gemini..."></textarea>
+      <textarea id="aiHelperPromptInput" rows="4" placeholder="輸入問題或指令，也可以搭配截圖一起送出..."></textarea>
     </div>
 
     <div class="ai-helper-actions">
@@ -25,13 +28,22 @@
     </div>
 
     <details class="ai-helper-settings">
-      <summary>Gemini API 設定</summary>
+      <summary>AI API 設定</summary>
+      <label class="ai-helper-field">
+        <span>供應商</span>
+        <select id="aiHelperProviderSelect">
+          <option value="gemini">Google Gemini</option>
+          <option value="openai">OpenAI</option>
+          <option value="anthropic">Anthropic Claude</option>
+          <option value="deepseek">DeepSeek</option>
+        </select>
+      </label>
       <div class="ai-helper-settings-row">
-        <input id="aiHelperApiKeyInput" type="password" autocomplete="off" placeholder="貼上 Gemini API Key">
+        <input id="aiHelperApiKeyInput" type="password" autocomplete="off" placeholder="貼上 API Key">
         <button id="aiHelperSaveKeyButton" type="button">儲存</button>
       </div>
       <div class="ai-helper-settings-row">
-        <input id="aiHelperModelInput" type="text" autocomplete="off" placeholder="模型名稱，例如 gemini-flash-latest">
+        <input id="aiHelperModelInput" type="text" autocomplete="off" placeholder="模型名稱">
         <button id="aiHelperSaveModelButton" type="button">套用</button>
       </div>
       <p id="aiHelperKeyStatus" class="ai-helper-status"></p>

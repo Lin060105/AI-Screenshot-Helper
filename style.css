@@ -13,6 +13,7 @@
   right: 24px;
   bottom: 24px;
   width: min(360px, calc(100vw - 32px));
+  height: min(560px, calc(100vh - 32px));
   max-height: min(520px, calc(100vh - 32px));
   background: #f8fafc;
   border: 1px solid #cbd5e1;
@@ -135,6 +136,7 @@
   flex-direction: column;
   gap: 10px;
   min-height: 0;
+  overflow-y: auto;
   padding: 12px;
 }
 
@@ -146,8 +148,8 @@
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  flex: 1 1 190px;
-  min-height: 150px;
+  flex: 1 1 150px;
+  min-height: 110px;
   overflow-y: auto;
   padding: 10px;
 }
@@ -189,6 +191,7 @@
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
+  flex: 0 0 auto;
   margin: 0;
   padding: 8px;
 }
@@ -196,17 +199,45 @@
 .ai-helper-preview img {
   border-radius: 6px;
   display: block;
-  max-height: 120px;
+  max-height: 86px;
   max-width: 100%;
   object-fit: contain;
 }
 
 .ai-helper-preview figcaption {
+  align-items: center;
   color: #475569;
+  display: flex;
   font-size: 12px;
+  justify-content: space-between;
+  gap: 8px;
   margin-top: 6px;
 }
 
+.ai-helper-preview figcaption span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-helper-preview figcaption button {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  color: #334155;
+  cursor: pointer;
+  flex: 0 0 auto;
+  font: inherit;
+  min-height: 28px;
+  padding: 4px 8px;
+}
+
+.ai-helper-preview figcaption button:hover {
+  background: #e2e8f0;
+}
+
+.ai-helper-field select,
 .ai-helper-input-row textarea,
 .ai-helper-settings-row input {
   background: #ffffff;
@@ -218,12 +249,29 @@
   width: 100%;
 }
 
+.ai-helper-field {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.ai-helper-field span {
+  color: #475569;
+  font-size: 12px;
+}
+
+.ai-helper-field select {
+  min-height: 36px;
+  padding: 7px 9px;
+}
+
 .ai-helper-input-row textarea {
-  min-height: 90px;
+  min-height: 76px;
   padding: 9px 10px;
   resize: vertical;
 }
 
+.ai-helper-field select:focus,
 .ai-helper-input-row textarea:focus,
 .ai-helper-settings-row input:focus {
   border-color: #2563eb;

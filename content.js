@@ -2,14 +2,37 @@
   const ROOT_ID = "ai-helper-shadow-host";
   const MESSAGE_TYPES = {
     CAPTURE_VISIBLE_TAB: "AI_HELPER_CAPTURE_VISIBLE_TAB",
-    START_CAPTURE: "AI_HELPER_START_CAPTURE"
+    START_CAPTURE: "AI_HELPER_START_CAPTURE",
+    GENERATE_CONTENT: "AI_HELPER_GENERATE_CONTENT"
   };
   const STORAGE_KEYS = {
-    API_KEY: "geminiApiKey",
-    MODEL_NAME: "geminiModelName"
+    PROVIDER: "aiProvider",
+    PROVIDER_SETTINGS: "aiProviderSettings"
   };
-  const DEFAULT_MODEL_NAME = "gemini-flash-latest";
-  const SYSTEM_PROMPT = "You are a concise visual analysis assistant. Answer based on the user's screenshot and question. If the image is unclear, say what is missing.";
+  const PROVIDERS = {
+    gemini: {
+      label: "Gemini",
+      defaultModel: "gemini-flash-latest",
+      supportsImages: true
+    },
+    openai: {
+      label: "OpenAI",
+      defaultModel: "gpt-4.1-mini",
+      supportsImages: true
+    },
+    anthropic: {
+      label: "Claude",
+      defaultModel: "claude-sonnet-4-5",
+      supportsImages: true
+    },
+    deepseek: {
+      label: "DeepSeek",
+      defaultModel: "deepseek-chat",
+      supportsImages: false
+    }
+  };
+  const DEFAULT_PROVIDER = "gemini";
+  const SYSTEM_PROMPT = "你是一個專業的程式設計助教，請閱讀圖片中的題目，給出正確答案，並用簡短的繁體中文解釋原因。";
 
   let shadowRoot = null;
   let panel = null;
@@ -17,15 +40,18 @@
   let chatLog = null;
   let preview = null;
   let previewImage = null;
+  let clearScreenshotButton = null;
   let promptInput = null;
   let captureButton = null;
   let sendButton = null;
+  let providerSelect = null;
   let apiKeyInput = null;
   let modelInput = null;
   let saveKeyButton = null;
   let saveModelButton = null;
   let keyStatus = null;
   let collapseButton = null;
+  let providerSettings = {};
   let croppedImageDataUrl = "";
   let isDraggingPanel = false;
   let didMovePanel = false;
@@ -47,7 +73,7 @@
     bindUiEvents();
     await restoreSettings();
     setPanelMinimized(true);
-    addMessage("system", "請先設定 Gemini API Key。完成後可以截圖並詢問 Gemini。");
+    addMessage("system", "請先選擇 AI 供應商並設定 API Key。Gemini、OpenAI、Claude 支援截圖；DeepSeek 目前支援純文字。");
   }
 
   async function createShadowUi() {
@@ -79,9 +105,11 @@
     chatLog = shadowRoot.getElementById("aiHelperChatLog");
     preview = shadowRoot.getElementById("aiHelperPreview");
     previewImage = shadowRoot.getElementById("aiHelperPreviewImage");
+    clearScreenshotButton = shadowRoot.getElementById("aiHelperClearScreenshotButton");
     promptInput = shadowRoot.getElementById("aiHelperPromptInput");
     captureButton = shadowRoot.getElementById("aiHelperCaptureButton");
     sendButton = shadowRoot.getElementById("aiHelperSendButton");
+    providerSelect = shadowRoot.getElementById("aiHelperProviderSelect");
     apiKeyInput = shadowRoot.getElementById("aiHelperApiKeyInput");
     modelInput = shadowRoot.getElementById("aiHelperModelInput");
     saveKeyButton = shadowRoot.getElementById("aiHelperSaveKeyButton");
@@ -99,7 +127,9 @@
     window.addEventListener("mouseup", stopPanelDrag);
 
     captureButton.addEventListener("click", startCaptureFlow);
-    sendButton.addEventListener("click", sendToGemini);
+    clearScreenshotButton.addEventListener("click", clearScreenshot);
+    sendButton.addEventListener("click", sendToAi);
+    providerSelect.addEventListener("change", handleProviderChange);
     saveKeyButton.addEventListener("click", saveApiKey);
     saveModelButton.addEventListener("click", saveModelName);
     collapseButton.addEventListener("click", handleCollapseButtonClick);
@@ -179,33 +209,76 @@
   }
 
   async function restoreSettings() {
-    const stored = await chrome.storage.local.get([STORAGE_KEYS.API_KEY, STORAGE_KEYS.MODEL_NAME]);
-    if (stored[STORAGE_KEYS.API_KEY]) {
-      apiKeyInput.value = stored[STORAGE_KEYS.API_KEY];
-    }
+    const stored = await chrome.storage.local.get([STORAGE_KEYS.PROVIDER, STORAGE_KEYS.PROVIDER_SETTINGS]);
+    providerSettings = stored[STORAGE_KEYS.PROVIDER_SETTINGS] || {};
 
-    modelInput.value = stored[STORAGE_KEYS.MODEL_NAME] || DEFAULT_MODEL_NAME;
-    keyStatus.textContent = stored[STORAGE_KEYS.API_KEY]
-      ? "已載入儲存的 API Key。"
-      : `預設模型：${DEFAULT_MODEL_NAME}`;
+    const provider = normalizeProvider(stored[STORAGE_KEYS.PROVIDER]);
+    providerSelect.value = provider;
+    applyProviderFields(provider);
   }
 
   async function saveApiKey() {
+    const provider = normalizeProvider(providerSelect.value);
     const apiKey = apiKeyInput.value.trim();
     if (!apiKey) {
       keyStatus.textContent = "請先輸入 API Key。";
       return;
     }
 
-    await chrome.storage.local.set({ [STORAGE_KEYS.API_KEY]: apiKey });
-    keyStatus.textContent = "API Key 已儲存。";
+    providerSettings[provider] = {
+      ...providerSettings[provider],
+      apiKey,
+      modelName: normalizeModelName(provider, modelInput.value)
+    };
+    await persistProviderSettings(provider);
+    keyStatus.textContent = `${PROVIDERS[provider].label} API Key 已儲存。`;
   }
 
   async function saveModelName() {
-    const modelName = normalizeModelName(modelInput.value);
+    const provider = normalizeProvider(providerSelect.value);
+    const modelName = normalizeModelName(provider, modelInput.value);
     modelInput.value = modelName;
-    await chrome.storage.local.set({ [STORAGE_KEYS.MODEL_NAME]: modelName });
+    providerSettings[provider] = {
+      ...providerSettings[provider],
+      apiKey: apiKeyInput.value.trim(),
+      modelName
+    };
+    await persistProviderSettings(provider);
     keyStatus.textContent = `模型已設定為 ${modelName}。`;
+  }
+
+  async function handleProviderChange() {
+    const previousProvider = Object.keys(PROVIDERS).find((provider) => providerSelect.dataset.currentProvider === provider);
+    if (previousProvider) {
+      providerSettings[previousProvider] = {
+        ...providerSettings[previousProvider],
+        apiKey: apiKeyInput.value.trim(),
+        modelName: normalizeModelName(previousProvider, modelInput.value)
+      };
+    }
+
+    const provider = normalizeProvider(providerSelect.value);
+    providerSelect.dataset.currentProvider = provider;
+    applyProviderFields(provider);
+    await persistProviderSettings(provider);
+  }
+
+  function applyProviderFields(provider) {
+    const settings = providerSettings[provider] || {};
+    const modelName = normalizeModelName(provider, settings.modelName);
+    apiKeyInput.value = settings.apiKey || "";
+    modelInput.value = modelName;
+    providerSelect.dataset.currentProvider = provider;
+    keyStatus.textContent = settings.apiKey
+      ? `已載入 ${PROVIDERS[provider].label} 設定。`
+      : `${PROVIDERS[provider].label} 預設模型：${modelName}`;
+  }
+
+  async function persistProviderSettings(provider) {
+    await chrome.storage.local.set({
+      [STORAGE_KEYS.PROVIDER]: provider,
+      [STORAGE_KEYS.PROVIDER_SETTINGS]: providerSettings
+    });
   }
 
   async function startCaptureFlow() {
@@ -369,13 +442,26 @@
     addMessage("system", "截圖完成，請輸入問題後送出。");
   }
 
-  async function sendToGemini() {
+  function clearScreenshot() {
+    croppedImageDataUrl = "";
+    previewImage.removeAttribute("src");
+    preview.hidden = true;
+    addMessage("system", "已刪除截圖，可以重新截圖。");
+  }
+
+  async function sendToAi() {
+    const provider = normalizeProvider(providerSelect.value);
     const apiKey = apiKeyInput.value.trim();
-    const modelName = normalizeModelName(modelInput.value);
+    const modelName = normalizeModelName(provider, modelInput.value);
     const userText = promptInput.value.trim();
 
     if (!apiKey) {
-      addMessage("error", "請先設定並儲存 Gemini API Key。");
+      addMessage("error", `請先設定並儲存 ${PROVIDERS[provider].label} API Key。`);
+      return;
+    }
+
+    if (croppedImageDataUrl && !PROVIDERS[provider].supportsImages) {
+      addMessage("error", `${PROVIDERS[provider].label} 目前不支援圖片輸入。請刪除截圖後用文字詢問，或改用 Gemini / OpenAI / Claude。`);
       return;
     }
 
@@ -385,82 +471,44 @@
     }
 
     modelInput.value = modelName;
-    await chrome.storage.local.set({
-      [STORAGE_KEYS.API_KEY]: apiKey,
-      [STORAGE_KEYS.MODEL_NAME]: modelName
-    });
+    providerSettings[provider] = {
+      ...providerSettings[provider],
+      apiKey,
+      modelName
+    };
+    await persistProviderSettings(provider);
 
     const userMessage = userText || "請分析這張截圖。";
     addMessage("user", userMessage);
-    const waitingMessage = addMessage("system", "AI 回覆中...");
+    const waitingMessage = addMessage("system", `${PROVIDERS[provider].label} 回覆中...`);
     setButtonBusy(sendButton, true, "送出中...");
 
     try {
-      const responseText = await callGeminiApi(apiKey, modelName, userMessage, croppedImageDataUrl);
+      const response = await chrome.runtime.sendMessage({
+        type: MESSAGE_TYPES.GENERATE_CONTENT,
+        payload: {
+          provider,
+          apiKey,
+          modelName,
+          systemPrompt: SYSTEM_PROMPT,
+          userText: userMessage,
+          imageDataUrl: croppedImageDataUrl
+        }
+      });
+
+      if (!response || !response.ok) {
+        throw new Error(response && response.error ? response.error : "AI API 沒有回應。");
+      }
+
       waitingMessage.remove();
-      addMessage("ai", responseText || "Gemini 沒有回傳文字內容。");
+      addMessage("ai", response.text || `${PROVIDERS[provider].label} 沒有回傳文字內容。`);
       promptInput.value = "";
     } catch (error) {
       waitingMessage.remove();
-      addMessage("error", `Gemini API 錯誤：${error.message}`);
+      addMessage("error", `${PROVIDERS[provider].label} API 錯誤：${buildApiErrorMessage(error.message, provider, modelName)}`);
     } finally {
       setButtonBusy(sendButton, false, "送出");
     }
-  }
-
-  async function callGeminiApi(apiKey, modelName, userText, imageDataUrl) {
-    const parts = [
-      { text: `${SYSTEM_PROMPT}\n\nUser request: ${userText}` }
-    ];
-
-    if (imageDataUrl) {
-      parts.push({
-        inline_data: {
-          mime_type: "image/png",
-          data: stripDataUrlPrefix(imageDataUrl)
-        }
-      });
-    }
-
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(apiKey)}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts
-            }
-          ]
-        })
-      }
-    );
-
-    const data = await response.json().catch(() => null);
-
-    if (!response.ok) {
-      const apiMessage = data && data.error && data.error.message ? data.error.message : response.statusText;
-      throw new Error(buildApiErrorMessage(apiMessage || `HTTP ${response.status}`, modelName));
-    }
-
-    return extractGeminiText(data);
-  }
-
-  function extractGeminiText(data) {
-    const candidates = data && Array.isArray(data.candidates) ? data.candidates : [];
-    const parts = candidates[0] && candidates[0].content && Array.isArray(candidates[0].content.parts)
-      ? candidates[0].content.parts
-      : [];
-
-    return parts
-      .map((part) => part.text || "")
-      .filter(Boolean)
-      .join("\n")
-      .trim();
   }
 
   function addMessage(type, text) {
@@ -485,18 +533,19 @@
     return { x, y, width, height };
   }
 
-  function stripDataUrlPrefix(dataUrl) {
-    return dataUrl.replace(/^data:image\/png;base64,/, "");
+  function normalizeProvider(provider) {
+    return PROVIDERS[provider] ? provider : DEFAULT_PROVIDER;
   }
 
-  function normalizeModelName(modelName) {
+  function normalizeModelName(provider, modelName) {
+    const currentProvider = normalizeProvider(provider);
     const trimmed = (modelName || "").trim().replace(/^models\//, "");
-    return trimmed || DEFAULT_MODEL_NAME;
+    return trimmed || PROVIDERS[currentProvider].defaultModel;
   }
 
-  function buildApiErrorMessage(message, modelName) {
+  function buildApiErrorMessage(message, provider, modelName) {
     if (/not found|not supported|ListModels/i.test(message)) {
-      return `${message}\n\n目前模型：${modelName}\n請確認這個 API Key 可以使用該模型，或改用 ${DEFAULT_MODEL_NAME} / gemini-2.5-flash。`;
+      return `${message}\n\n目前供應商：${PROVIDERS[provider].label}\n目前模型：${modelName}\n請確認這個 API Key 可以使用該模型，或改回預設模型 ${PROVIDERS[provider].defaultModel}。`;
     }
 
     return message;
