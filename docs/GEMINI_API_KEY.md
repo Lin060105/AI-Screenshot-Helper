@@ -21,7 +21,7 @@
 
 登入你的 Google 帳號。
 
-![開啟 Google AI Studio](../新增資料夾/step1.jpg)
+![開啟 Google AI Studio](../Sample%20image/step1.jpg)
 
 ## 2. 進入 API Key 頁面
 
@@ -29,7 +29,7 @@
 
 如果畫面改版，可以尋找和 API Key、金鑰、開發者設定相關的選項。
 
-![進入 API Key 頁面](../新增資料夾/step2.jpg)
+![進入 API Key 頁面](../Sample%20image/step2.jpg)
 
 ## 3. 建立新的 API Key
 
@@ -37,23 +37,23 @@
 
 Google 可能會要求你選擇或建立一個 Google Cloud 專案。依照畫面指示建立即可。
 
-![建立新的 API Key](../新增資料夾/step3.jpg)
+![建立新的 API Key](../Sample%20image/step3.jpg)
 
 ## 4. 選擇或建立專案
 
 如果 Google AI Studio 要求你選擇 Google Cloud 專案，可以選擇既有專案，或依照畫面建立新的專案。
 
-![選擇 Google Cloud 專案](../新增資料夾/step4.jpg)
+![選擇 Google Cloud 專案](../Sample%20image/step4.jpg)
 
 ## 5. 複製 API Key
 
 建立完成後，你會看到一串 API Key。請複製這組金鑰。
 
-![複製 Gemini API Key](../新增資料夾/step5.jpg)
+![複製 Gemini API Key](../Sample%20image/step5.jpg)
 
 如果畫面有額外的確認或設定步驟，依照頁面提示完成。
 
-![完成 API Key 建立](../新增資料夾/step5-1.jpg)
+![完成 API Key 建立](../Sample%20image/step5-1.jpg)
 
 ## 6. 貼到 AI Screenshot Helper
 
