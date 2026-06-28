@@ -43,19 +43,19 @@ chrome://extensions
 
 在右上角打開 **開發人員模式**。
 
-![開啟 Chrome 擴充功能開發人員模式](Sample image/stepA.jpg)
+![開啟 Chrome 擴充功能開發人員模式](Sample-image/stepA.jpg)
 
 ### 4. 載入未封裝項目
 
 點選 **載入未封裝項目**。
 
-![點選載入未封裝項目](Sample image/stepB.jpg)
+![點選載入未封裝項目](Sample-image/stepB.jpg)
 
 ### 5. 選擇專案資料夾
 
 選擇這個專案資料夾，也就是包含 `manifest.json` 的那一層資料夾。
 
-![選擇擴充功能資料夾](Sample image/stepC.jpg)
+![選擇擴充功能資料夾](Sample-image/stepC.jpg)
 
 ### 6. 設定 Gemini API Key
 
