@@ -1,5 +1,20 @@
 # AI Screenshot Helper
 
+## 版本選擇與下載
+
+> [!NOTE]
+> GitHub 預設下載的是穩定版。未測試版會放在獨立分支，想嘗鮮的人需要自己切換分支下載。
+
+- **穩定版 Stable**：使用 `main` 分支，這是已實測、建議一般使用者下載的版本。
+- **未測試版 Experimental**：使用 `experimental-multi-api` 分支，包含多家 AI API 支援，但尚未完整實測。
+
+下載方式：
+
+1. 到 GitHub 專案頁面。
+2. 點選左上方分支選單。
+3. 選擇 `main` 下載穩定版，或選擇 `experimental-multi-api` 下載未測試版。
+4. 點選 **Code** → **Download ZIP**。
+
 AI Screenshot Helper 是一個 Chrome 擴充功能，可以讓你在網頁上框選畫面截圖，並把截圖和你的問題一起送到 Gemini Vision 進行分析。
 
 > [!IMPORTANT]
