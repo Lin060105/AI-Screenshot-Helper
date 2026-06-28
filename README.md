@@ -26,7 +26,7 @@ AI Screenshot Helper 是一個 Chrome 擴充功能，可以讓你在網頁上框
 如果你熟悉 Git，可以使用：
 
 ```powershell
-git clone https://github.com/你的帳號/你的repo.git
+git clone https://github.com/Lin060105/AI-Screenshot-Helper.git
 ```
 
 也可以在 GitHub 頁面點選 **Code**，再點 **Download ZIP**，下載後解壓縮。
